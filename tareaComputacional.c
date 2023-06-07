@@ -79,7 +79,7 @@ int main() {
 	//Cerramos el archivo.
 	fclose(archivo);
 	
-	//Creamos la matriz con las conexiones entre usuarios (aristas del grafo).
+	//Creamos la matriz de conexiones entre usuarios (aristas del grafo).
 	red.conexion = (int**)malloc(red.numUsuarios * sizeof(int*));
 	if(red.conexion == NULL) {
 		printf("Error al asignar memoria dinamica.\n");
@@ -92,8 +92,31 @@ int main() {
 			return 1;
 		}
 	}
-	//Rellenamos la matriz con las conexiones respectivas.
+	//Inicializamos la matriz con ceros.
+	for(int i = 0; i < red.numUsuarios; i++) {
+		for(int j = 0; j < red.numUsuarios; j++) {
+			red.conexion[i][j] = 0;
+		}
+	}
 	
+	//Rellenamos la matriz con las conexiones respectivas.
+	for(int i = 0; i < red.numUsuarios; i++) { 			//Para cada usuario "i" de la red has lo siguiente:
+		for(int g = 0; g < red.usuario[i].gradoMax; g++) { 	//por cada solicitud de amistad que envio,
+			for(int j = 0; j < red.numUsuarios; j++) { 	//busca a ese usuario "j" en la lista.
+				if(strcmp(red.usuario[j].nombre, red.usuario[i].amigos[g]) == 0) {
+					if(red.usuario[j].esCreador == 1) { 	//Si "j" es creador,
+						red.conexion[i][j] = 1; 	//agrega la conexion "(i,j)" inmediatamente.
+					} else { 				//Si no es creador,
+						for(int m = 0; m < red.usuario[j].gradoMax; m++) { 	//busca a "i" en su lista de solicitudes.
+							if(strcmp(red.usuario[j].amigos[m], red.usuario[i].nombre) == 0) {
+								red.conexion[i][j] = 1; 		//si aparece entoces se agregaron mutuamente por lo que agregamos la conexion "(i,j)".
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 	
 	//Entramos en el bucle de consultas del anunciante.
 	//Pedimos al anunciante los filtros de busqueda.
