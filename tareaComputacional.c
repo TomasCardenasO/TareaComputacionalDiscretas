@@ -119,11 +119,49 @@ int main() {
 	}
 	
 	//Entramos en el bucle de consultas del anunciante.
-	//Pedimos al anunciante los filtros de busqueda.
-	//Generamos el un subgrafo de la red segun los intereses del anunciante.
-	//Operamos sobre el subgrafo para encontrar, por cada componente conexa, el numero de usuarios (total, generales y creadores), y los usuarios con menor excentricidad.
-	
-	
+	char siono;
+	char* pais;
+	int eminima, emaxima;
+	char* interes;
+	int c;
+	int flag1;
+	do {
+		//Pedimos al anunciante los filtros de busqueda.
+		while((c = getchar()) != '\n') {} //Limpiamos el buffer antes de leer.
+		printf("Ingrese los criterios de busqueda\n");
+		printf("Ingrese el pais, (si no es importante ingrese -1): ");
+		pais = (char*)malloc(sizeof(char) * 21);
+		scanf("%s", pais);
+		flag1 = 0;
+		do {
+			if(flag1 == 1) {
+				printf("Error: La edad minima tiene que ser menor o igual a la edad maxima.\n");
+			}
+			printf("Ingrese la edad minima (si no es importante ingrese 0): ");
+			scanf("%d", &eminima);
+			printf("Ingrese la edad maxima (si no es importante ingrese 120): ");
+			scanf("%d", &emaxima);
+			flag1 = 1;
+		} while(eminima > emaxima);
+		while((c = getchar()) != '\n') {} //Limpiamos el buffer antes de leer.
+		printf("Ingrese el interes, (si no es importante ingrese -1): ");
+		interes = (char*)malloc(sizeof(char) * 21);
+		scanf("%s", interes);
+		printf("\nLos parametros son: %s, %d, %d, %s.\n", pais, eminima, emaxima, interes);
+		//Generamos el un subgrafo de la red segun los intereses del anunciante.
+		
+		
+		//Operamos sobre el subgrafo para encontrar, por cada componente conexa, el numero de usuarios (total, generales y creadores), y los usuarios con menor excentricidad.
+		
+		
+		//Liberamos la memoria dinamica de la consulta.
+		free(pais);
+		free(interes);
+		
+		while((c = getchar()) != '\n') {} //Limpiamos el buffer antes de leer.
+		printf("Desea hacer otra consulta? (S/N): ");
+		scanf("%c", &siono);
+	} while(siono == 's' || siono == 'S');
 	
 	//Liberamos la memoria dinamica de la red.
 	free(red.usuario);
