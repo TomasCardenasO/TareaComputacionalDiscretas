@@ -16,7 +16,7 @@ struct Usuario {
 
 struct Grafo {
 	int numUsuarios; //El orden del grafo.
-	struct Usuario* usuario; //Vector con que contiene a los usuarios (conjunto de los vertices del grafo).
+	struct Usuario* usuario; //Vector que contiene a los usuarios (conjunto de los vertices del grafo).
 	int** conexion; //Matriz que contiene la informacion sobre las conexiones (aristas del grafo).
 };
 
@@ -79,45 +79,6 @@ int main() {
 	//Cerramos el archivo.
 	fclose(archivo);
 	
-	//Creamos la matriz de conexiones entre usuarios (aristas del grafo).
-	red.conexion = (int**)malloc(red.numUsuarios * sizeof(int*));
-	if(red.conexion == NULL) {
-		printf("Error al asignar memoria dinamica.\n");
-		return 1;
-	}
-	for(int i = 0; i < red.numUsuarios; i++) {
-		red.conexion[i] = (int*)malloc(red.numUsuarios * sizeof(int));
-		if(red.conexion[i] == NULL) {
-			printf("Error al asignar memoria dinamica.\n");
-			return 1;
-		}
-	}
-	//Inicializamos la matriz con ceros.
-	for(int i = 0; i < red.numUsuarios; i++) {
-		for(int j = 0; j < red.numUsuarios; j++) {
-			red.conexion[i][j] = 0;
-		}
-	}
-	
-	//Rellenamos la matriz con las conexiones respectivas.
-	for(int i = 0; i < red.numUsuarios; i++) { 			//Para cada usuario "i" de la red has lo siguiente:
-		for(int g = 0; g < red.usuario[i].gradoMax; g++) { 	//por cada solicitud de amistad que envio,
-			for(int j = 0; j < red.numUsuarios; j++) { 	//busca a ese usuario "j" en la lista.
-				if(strcmp(red.usuario[j].nombre, red.usuario[i].amigos[g]) == 0) {
-					if(red.usuario[j].esCreador == 1) { 	//Si "j" es creador,
-						red.conexion[i][j] = 1; 	//agrega la conexion "(i,j)" inmediatamente.
-					} else { 				//Si no es creador,
-						for(int m = 0; m < red.usuario[j].gradoMax; m++) { 	//busca a "i" en su lista de solicitudes.
-							if(strcmp(red.usuario[j].amigos[m], red.usuario[i].nombre) == 0) {
-								red.conexion[i][j] = 1; 		//si aparece entoces se agregaron mutuamente por lo que agregamos la conexion "(i,j)".
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	
 	//Entramos en el bucle de consultas del anunciante.
 	char siono;
 	char* pais;
@@ -149,14 +110,107 @@ int main() {
 		scanf("%s", interes);
 		printf("\nLos parametros son: %s, %d, %d, %s.\n", pais, eminima, emaxima, interes);
 		//Generamos el un subgrafo de la red segun los intereses del anunciante.
+		struct Grafo subred;
+		subred.numUsuarios = 0;
+		subred.usuario = (struct Usuario*)malloc(sizeof(struct Usuario) * red.numUsuarios);
+		if(subred.usuario == NULL) {
+				printf("Error al asignar memoria dinamica.\n");
+				return 1;
+		}
+		//Añadimos los usuarios que nos interesan al conjunto de usuarios del subgrafo.
+		int flag2;
+		for(int i = 0; i < red.numUsuarios; i++) {
+			flag2 = 0;
+			if((strcmp(pais, "-1") == 0 || strcmp(red.usuario[i].pais, pais) == 0) && (eminima <= red.usuario[i].edad && red.usuario[i].edad <= emaxima)) {
+				for(int j = 0; j < red.usuario[i].numIntereses; j++) {
+					if(strcmp(red.usuario[i].intereses[j], interes) == 0) {
+						flag2 = 1;
+						break;
+					}
+				}
+				if(strcmp(interes, "-1") == 0 || flag2 == 1) {
+					subred.usuario[subred.numUsuarios] = red.usuario[i];
+					subred.numUsuarios += 1;
+				}		
+			}
+		}
+		//Si existen usuarios que cumplan con los criterios hacemos lo siguiente.
+		if(subred.numUsuarios > 0) {
+			//Generamos la matriz con las conexiones entre usuarios.
+			subred.conexion = (int**)malloc(subred.numUsuarios * sizeof(int*));
+			if(subred.conexion == NULL) {
+				printf("Error al asignar memoria dinamica.\n");
+				return 1;
+			}
+			for(int i = 0; i < subred.numUsuarios; i++) {
+				subred.conexion[i] = (int*)malloc(subred.numUsuarios * sizeof(int));
+				if(subred.conexion[i] == NULL) {
+					printf("Error al asignar memoria dinamica.\n");
+					return 1;
+				}
+			}
+			//Inicializamos la matriz con ceros.
+			for(int i = 0; i < subred.numUsuarios; i++) {
+				for(int j = 0; j < subred.numUsuarios; j++) {
+					subred.conexion[i][j] = 0;
+				}
+			}
+	
+			//Rellenamos la matriz con las conexiones respectivas.
+			//Para cada usuario "i" de la red has lo siguiente:
+			for(int i = 0; i < subred.numUsuarios; i++) {
+				//por cada solicitud de amistad que envio,
+				for(int g = 0; g < subred.usuario[i].gradoMax; g++) {
+					//busca a ese usuario "j" en la lista.
+					for(int j = 0; j < subred.numUsuarios; j++) { 
+						if(strcmp(subred.usuario[j].nombre, subred.usuario[i].amigos[g]) == 0) {
+							//Si "j" es creador,
+							if(subred.usuario[j].esCreador == 1) { 
+								//agrega la conexion "(i,j)" inmediatamente.
+								subred.conexion[i][j] = 1; 
+							//Si no es creador,
+							} else { 
+								//busca a "i" en su lista de solicitudes.
+								for(int m = 0; m < subred.usuario[j].gradoMax; m++) {
+									//si aparece entoces se agregaron mutuamente por lo que agregamos la conexion "(i,j)".
+									if(strcmp(subred.usuario[j].amigos[m], subred.usuario[i].nombre) == 0) {
+										subred.conexion[i][j] = 1;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			/*Operamos sobre el subgrafo para encontrar, por cada componente conexa, el numero de
+			usuarios (total, generale y creadores), y los usuarios con menor excentricidad.*/
 		
-		
-		//Operamos sobre el subgrafo para encontrar, por cada componente conexa, el numero de usuarios (total, generales y creadores), y los usuarios con menor excentricidad.
-		
+			/*Algoritmo:
+			- Recorre todos los vertices del grafo, por cada vertice {
+				- si su componente conexa no fue explorada {
+				- recorre la componente contando el numero de creador y usuarios generales
+				- guarda cada vertice en un vector y marca su componente conexa como explorada
+				- por cada vertice en el vector aplica BFS para saber su excentricidad
+				- imprime los datos obtenidos de esta comunidad
+			}
+			- si su componente conexa fue explorada pasa al siguiente.	
+			}
+			*/
+			
+			//Liberamos la memoria dinamica de la matriz de aristas.
+			for(int i = 0; i < subred.numUsuarios; i++) {
+				free(subred.conexion[i]);
+			}
+			free(subred.conexion);
+		} else {
+			printf("No hay usuarios que cumplan con los criterios de busqueda.\n");
+		}
 		
 		//Liberamos la memoria dinamica de la consulta.
 		free(pais);
 		free(interes);
+		free(subred.usuario);
 		
 		while((c = getchar()) != '\n') {} //Limpiamos el buffer antes de leer.
 		printf("Desea hacer otra consulta? (S/N): ");
@@ -165,9 +219,5 @@ int main() {
 	
 	//Liberamos la memoria dinamica de la red.
 	free(red.usuario);
-	for(int i = 0; i < red.numUsuarios; i++) {
-		free(red.conexion[i]);
-	}
-	free(red.conexion);
 	return 0;
 }
