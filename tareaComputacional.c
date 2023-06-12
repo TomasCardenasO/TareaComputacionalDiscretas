@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 struct Usuario {
 	int id; //Identificador del usuario, sirve para hacer mas facil las operaciones. (0,1,...,n)
@@ -14,6 +15,8 @@ struct Usuario {
 	char intereses[20][21]; //Las filas son los intereses del usuario (maximo 20), pueden tener 20 caracteres.
 	int compExplored; //Indica si la componente conexa (comunidad) fue explorada.
 	int visitado; //Indica si este usuario fue visitado dentro del algoritmo BFS.
+	int excentricidad; //Indica cual es la distancia entre este y el usuario mas lejano de su comunidad.
+	int distancia; //Indica la distancia hacia el usuario al que se le esta calculando la excentricidad.
 };
 
 struct Grafo {
@@ -21,27 +24,6 @@ struct Grafo {
 	struct Usuario* usuario; //Vector que contiene a los usuarios (conjunto de los vertices del grafo).
 	int** conexion; //Matriz que contiene la informacion sobre las conexiones (aristas del grafo).
 };
-
-void imprimeUsuario(struct Usuario usuario) {
-	printf("Nombre: %s\n", usuario.nombre);
-	printf("Pais: %s\n", usuario.pais);
-	printf("Edad: %d\n", usuario.edad);
-	if(usuario.esCreador == 1) {
-		printf("Es creador de contenido\n");
-	} else {
-		printf("No es creador de contenido\n");
-	}
-	printf("Solicitudes enviadas: ");
-	for(int i = 0; i < usuario.gradoMax; i++) {
-		printf("%s ", usuario.amigos[i]);
-	}
-	printf("\n");
-	printf("Intereses: ");
-	for(int i = 0; i < usuario.numIntereses; i++) {
-		printf("%s ", usuario.intereses[i]);
-	}
-	printf("\n");
-}
 
 int main() {
 	//Primero abrimos el archivo de entrada.
@@ -110,7 +92,8 @@ int main() {
 		printf("Ingrese el interes, (si no es importante ingrese -1): ");
 		interes = (char*)malloc(sizeof(char) * 21);
 		scanf("%s", interes);
-		printf("\nLos parametros son: %s, %d, %d, %s.\n", pais, eminima, emaxima, interes);
+		printf("\nLos parametros son: %s, %d, %d, %s.\n\n", pais, eminima, emaxima, interes);
+		
 		//Generamos el un subgrafo de la red segun los intereses del anunciante.
 		struct Grafo subred;
 		subred.numUsuarios = 0;
@@ -195,14 +178,13 @@ int main() {
 			/*Algoritmo:
 			- Recorre todos los vertices del grafo, por cada vertice {
 				- si su componente conexa no fue explorada {
-				- recorre la componente contando el numero de creador y usuarios generales
-				- guarda cada vertice en un vector y marca su componente conexa como explorada
+				- recorre la componente contando el numero de creadores y usuarios generales
+				- guarda cada usuario en un vector y marca su componente conexa como explorada
 				- por cada vertice en el vector aplica BFS para saber su excentricidad
 				- imprime los datos obtenidos de esta comunidad
 			}
 			- si su componente conexa fue explorada pasa al siguiente.	
-			}
-			*/
+			}*/
 			int numComunidad = 0;
 			int numCreadores;
 			int numUsuarios;
@@ -211,7 +193,9 @@ int main() {
 			struct Usuario** cola;
 			int sizeCola;
 			struct Usuario* primero;
+			//Recorremos todos los usuarios del subgrafo.
 			for(int i = 0; i < subred.numUsuarios; i++) {
+				//Si la componente del usuario "i" no fue explorada, 
 				if(subred.usuario[i].compExplored == 0) {
 					numComunidad += 1;
 					printf("Comunidad %d \n", numComunidad);
@@ -219,7 +203,7 @@ int main() {
 					numUsuarios = 0;
 					numTotal = 0;
 					usuariosComunidad = (struct Usuario**)malloc(sizeof(struct Usuario*) * subred.numUsuarios);
-					//BFS.
+					//usamos BFS para explorarla contando a los usuarios y dejandolos en un vector.
 					for(int j = 0; j < subred.numUsuarios; j++) {
 						subred.usuario[j].visitado = 0;
 					}
@@ -244,7 +228,7 @@ int main() {
 						} else {
 							numUsuarios += 1;
 						}
-						//Recorremos sus vecinos.
+						//Recorremos sus vecinos dejandolos en la cola.
 						for(int j = 0; j < subred.numUsuarios; j++) {
 							if(subred.conexion[(*primero).id][j] == 1) {
 								if(subred.usuario[j].visitado == 0) {
@@ -255,37 +239,101 @@ int main() {
 							}
 						}
 					}
+					//Imprimimos los datos recolectados.
 					printf("La comunidad %d tiene %d cuentas de usuarios.\n", numComunidad, numTotal);
 					printf("Esta comunidad tiene %d creadores de contenido y tiene %d usuarios regulares.\n", numCreadores, numUsuarios);
-					for(int j = 0; j < numTotal; j++) {
-						printf("%s\n", (*usuariosComunidad[j]).nombre);
+					//Calculamos la excentricidad del usuario "k" en el vector
+					//de la comunidad aplicando BFS a cada uno.
+					free(cola);
+					for(int k = 0; k < numTotal; k++) {
+						//BFS
+						for(int j = 0; j < numTotal; j++) {
+							(*usuariosComunidad[j]).visitado = 0;
+						}
+						cola = (struct Usuario**)malloc(sizeof(struct Usuario*) * numTotal);
+						sizeCola = 0;
+						(*usuariosComunidad[k]).visitado = 1;
+						(*usuariosComunidad[k]).distancia = 0;
+						(*usuariosComunidad[k]).excentricidad = 0;
+						cola[sizeCola] = usuariosComunidad[k];
+						sizeCola += 1;
+						while(sizeCola != 0) {
+							//Extraemos el primer elemento de la cola.
+							primero = cola[0];
+							for(int j = 0; j < sizeCola - 1; j++) {
+								cola[j] = cola[j + 1];
+							}
+							sizeCola -= 1;
+							//Recorremos sus vecinos actualizando las distancias.
+							for(int j = 0; j < subred.numUsuarios; j++) {
+								if(subred.conexion[(*primero).id][j] == 1) {
+									if(subred.usuario[j].visitado == 0) {
+										subred.usuario[j].visitado = 1;
+										subred.usuario[j].distancia = (*primero).distancia + 1;
+										if(subred.usuario[j].distancia > (*usuariosComunidad[k]).excentricidad) {
+											(*usuariosComunidad[k]).excentricidad = subred.usuario[j].distancia;
+										}
+										cola[sizeCola] = &subred.usuario[j];
+										sizeCola += 1;
+									}
+								}
+							}
+						}
 					}
-									
+					
+					//Imprimimos a los usuarios con menor excentricidad
+					int menorExcentricidad = INT_MAX;
+					for(int k = 0; k < numTotal; k++) {
+						if((*usuariosComunidad[k]).excentricidad < menorExcentricidad) {
+							menorExcentricidad = (*usuariosComunidad[k]).excentricidad;
+						}
+					}
+					if(numCreadores > 0) {
+						printf("Mejores creadores de contenido: \n");
+						for(int k = 0; k < numTotal; k++) {
+							if((*usuariosComunidad[k]).esCreador == 1 && (*usuariosComunidad[k]).excentricidad == menorExcentricidad) {
+								printf("\t%s\n", (*usuariosComunidad[k]).nombre);
+							}
+						}
+					}
+					if(numUsuarios > 0) {
+						printf("Mejores usuarios: \n");
+						for(int k = 0; k < numTotal; k++) {
+							if((*usuariosComunidad[k]).excentricidad == menorExcentricidad) {
+								printf("\t%s\n", (*usuariosComunidad[k]).nombre);
+							}
+						}
+					}
+					
+					//Liberamos la memoria dinamica de la comunidad.			
 					free(usuariosComunidad);
 					free(cola);		
 				}
 			}
 			
-			//Liberamos la memoria dinamica de la matriz de aristas.
+			//Liberamos la memoria dinamica de la consulta (aristas).
 			for(int i = 0; i < subred.numUsuarios; i++) {
 				free(subred.conexion[i]);
 			}
 			free(subred.conexion);
+			
+		//Si no hay usuarios que cumplan con los requisitos...
 		} else {
 			printf("No hay usuarios que cumplan con los criterios de busqueda.\n");
 		}
 		
-		//Liberamos la memoria dinamica de la consulta.
+		//Liberamos la memoria dinamica de la consulta (vertices entre otros).
 		free(pais);
 		free(interes);
 		free(subred.usuario);
 		
+		//Hacemos otra consulta.
 		while((c = getchar()) != '\n') {} //Limpiamos el buffer antes de leer.
 		printf("Desea hacer otra consulta? (S/N): ");
 		scanf("%c", &siono);
 	} while(siono == 's' || siono == 'S');
 	
-	//Liberamos la memoria dinamica de la red.
+	//Liberamos la memoria dinamica de la red (vertices).
 	free(red.usuario);
 	return 0;
 }
