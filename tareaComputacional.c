@@ -170,15 +170,17 @@ int main() {
 						if(strcmp(subred.usuario[j].nombre, subred.usuario[i].amigos[g]) == 0) {
 							//Si "j" es creador,
 							if(subred.usuario[j].esCreador == 1) { 
-								//agrega la conexion "(i,j)" inmediatamente.
+								//agrega la conexion "(i,j) y (j,i)" inmediatamente.
 								subred.conexion[i][j] = 1; 
+								subred.conexion[j][i] = 1;
 							//Si no es creador,
 							} else { 
 								//busca a "i" en su lista de solicitudes.
 								for(int m = 0; m < subred.usuario[j].gradoMax; m++) {
-									//si aparece entoces se agregaron mutuamente por lo que agregamos la conexion "(i,j)".
+									//si aparece entoces se agregaron mutuamente por lo que agregamos la conexion "(i,j) y (j,i)".
 									if(strcmp(subred.usuario[j].amigos[m], subred.usuario[i].nombre) == 0) {
 										subred.conexion[i][j] = 1;
+										subred.conexion[j][i] = 1;
 									}
 								}
 							}
@@ -186,7 +188,7 @@ int main() {
 					}
 				}
 			}
-			
+	
 			/*Operamos sobre el subgrafo para encontrar, por cada componente conexa, el numero de
 			usuarios (total, general y creadores), y los usuarios con menor excentricidad.*/
 		
@@ -263,7 +265,6 @@ int main() {
 					free(cola);		
 				}
 			}
-			
 			
 			//Liberamos la memoria dinamica de la matriz de aristas.
 			for(int i = 0; i < subred.numUsuarios; i++) {
