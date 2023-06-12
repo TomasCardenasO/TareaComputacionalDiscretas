@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <ctype.h>
 
 struct Usuario {
 	int id; //Identificador del usuario, sirve para hacer mas facil las operaciones. (0,1,...,n)
@@ -24,6 +25,14 @@ struct Grafo {
 	struct Usuario* usuario; //Vector que contiene a los usuarios (conjunto de los vertices del grafo).
 	int** conexion; //Matriz que contiene la informacion sobre las conexiones (aristas del grafo).
 };
+
+void aMinusculas(char* palabra) { //Una funcion que pasa una palabra a minusculas.
+	int i = 0;
+	while(palabra[i]) {
+		palabra[i] = tolower(palabra[i]);
+		i += 1;
+	}
+}
 
 int main() {
 	//Primero abrimos el archivo de entrada.
@@ -49,6 +58,7 @@ int main() {
 		red.usuario[i].id = i;
 		fscanf(archivo, "%s", red.usuario[i].nombre);
 		fscanf(archivo, "%s", red.usuario[i].pais);
+		aMinusculas(red.usuario[i].pais);
 		fscanf(archivo, "%d", &red.usuario[i].edad);
 		fscanf(archivo, "%d", &red.usuario[i].esCreador);
 		fscanf(archivo, "%d", &red.usuario[i].gradoMax);
@@ -58,6 +68,7 @@ int main() {
 		fscanf(archivo, "%d", &red.usuario[i].numIntereses);
 		for(int j = 0; j < red.usuario[i].numIntereses; j++) {
 			fscanf(archivo, "%s", red.usuario[i].intereses[j]);
+			aMinusculas(red.usuario[i].intereses[j]);
 		}
 	}
 	//Cerramos el archivo.
@@ -77,6 +88,7 @@ int main() {
 		printf("Ingrese el pais, (si no es importante ingrese -1): ");
 		pais = (char*)malloc(sizeof(char) * 21);
 		scanf("%s", pais);
+		aMinusculas(pais);
 		flag1 = 0;
 		do {
 			if(flag1 == 1) {
@@ -92,6 +104,7 @@ int main() {
 		printf("Ingrese el interes, (si no es importante ingrese -1): ");
 		interes = (char*)malloc(sizeof(char) * 21);
 		scanf("%s", interes);
+		aMinusculas(interes);
 		printf("\nLos parametros son: %s, %d, %d, %s.\n\n", pais, eminima, emaxima, interes);
 		
 		//Generamos el un subgrafo de la red segun los intereses del anunciante.
@@ -240,8 +253,28 @@ int main() {
 						}
 					}
 					//Imprimimos los datos recolectados.
-					printf("La comunidad %d tiene %d cuentas de usuarios.\n", numComunidad, numTotal);
-					printf("Esta comunidad tiene %d creadores de contenido y tiene %d usuarios regulares.\n", numCreadores, numUsuarios);
+					printf("La comunidad %d ", numComunidad);
+					if(numTotal == 1) {
+						printf("tiene una cuenta de usuario.\n");
+					} else {
+						printf("tiene %d cuentas de usuarios.\n", numTotal);
+					}
+					printf("Esta comunidad ");
+					if(numCreadores == 0) {
+						printf("no tiene creadores de contenido y ");
+					} else if(numCreadores == 1) {
+						printf("tiene un creador de contenido y ");
+					} else {
+						printf("tiene %d creadores de contenido y ", numCreadores);
+					}
+					if(numUsuarios == 0) {
+						printf("no tiene usuarios regulares.\n");
+					} else if(numUsuarios == 1) {
+						printf("tiene un usuario regular.\n");
+					} else {
+						printf("tiene %d usuarios regulares.\n", numUsuarios);
+					}
+					
 					//Calculamos la excentricidad del usuario "k" en el vector
 					//de la comunidad aplicando BFS a cada uno.
 					free(cola);
@@ -326,7 +359,6 @@ int main() {
 		free(pais);
 		free(interes);
 		free(subred.usuario);
-		
 		//Hacemos otra consulta.
 		while((c = getchar()) != '\n') {} //Limpiamos el buffer antes de leer.
 		printf("Desea hacer otra consulta? (S/N): ");
