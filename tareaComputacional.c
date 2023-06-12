@@ -12,6 +12,8 @@ struct Usuario {
 	char amigos[100][21]; //Las filas son todas las personas a las que se envio una solicitud (maximo 100).
 	int numIntereses;
 	char intereses[20][21]; //Las filas son los intereses del usuario (maximo 20), pueden tener 20 caracteres.
+	int compExplored; //Indica si la componente conexa (comunidad) fue explorada.
+	int visitado; //Indica si este usuario fue visitado dentro del algoritmo BFS.
 };
 
 struct Grafo {
@@ -130,6 +132,8 @@ int main() {
 				}
 				if(strcmp(interes, "-1") == 0 || flag2 == 1) {
 					subred.usuario[subred.numUsuarios] = red.usuario[i];
+					subred.usuario[subred.numUsuarios].id = subred.numUsuarios;
+					subred.usuario[subred.numUsuarios].compExplored = 0;
 					subred.numUsuarios += 1;
 				}		
 			}
@@ -184,7 +188,7 @@ int main() {
 			}
 			
 			/*Operamos sobre el subgrafo para encontrar, por cada componente conexa, el numero de
-			usuarios (total, generale y creadores), y los usuarios con menor excentricidad.*/
+			usuarios (total, general y creadores), y los usuarios con menor excentricidad.*/
 		
 			/*Algoritmo:
 			- Recorre todos los vertices del grafo, por cada vertice {
@@ -197,6 +201,69 @@ int main() {
 			- si su componente conexa fue explorada pasa al siguiente.	
 			}
 			*/
+			int numComunidad = 0;
+			int numCreadores;
+			int numUsuarios;
+			int numTotal;
+			struct Usuario** usuariosComunidad;
+			struct Usuario** cola;
+			int sizeCola;
+			struct Usuario* primero;
+			for(int i = 0; i < subred.numUsuarios; i++) {
+				if(subred.usuario[i].compExplored == 0) {
+					numComunidad += 1;
+					printf("Comunidad %d \n", numComunidad);
+					numCreadores = 0;
+					numUsuarios = 0;
+					numTotal = 0;
+					usuariosComunidad = (struct Usuario**)malloc(sizeof(struct Usuario*) * subred.numUsuarios);
+					//BFS.
+					for(int j = 0; j < subred.numUsuarios; j++) {
+						subred.usuario[j].visitado = 0;
+					}
+					cola = (struct Usuario**)malloc(sizeof(struct Usuario*) * subred.numUsuarios);
+					sizeCola = 0;
+					subred.usuario[i].visitado = 1;
+					cola[sizeCola] = &subred.usuario[i];
+					sizeCola += 1;
+					while(sizeCola != 0) {
+						//Extraemos el primer elemento de la cola.
+						primero = cola[0];
+						for(int j = 0; j < sizeCola - 1; j++) {
+							cola[j] = cola[j + 1];
+						}
+						sizeCola -= 1;
+						//Lo contamos como usuario de la comunidad y lo agregamos al vector.
+						(*primero).compExplored = 1;
+						usuariosComunidad[numTotal] = primero;
+						numTotal += 1;
+						if((*primero).esCreador == 1) {
+							numCreadores += 1;
+						} else {
+							numUsuarios += 1;
+						}
+						//Recorremos sus vecinos.
+						for(int j = 0; j < subred.numUsuarios; j++) {
+							if(subred.conexion[(*primero).id][j] == 1) {
+								if(subred.usuario[j].visitado == 0) {
+									subred.usuario[j].visitado = 1;
+									cola[sizeCola] = &subred.usuario[j];
+									sizeCola += 1;
+								}
+							}
+						}
+					}
+					printf("La comunidad %d tiene %d cuentas de usuarios.\n", numComunidad, numTotal);
+					printf("Esta comunidad tiene %d creadores de contenido y tiene %d usuarios regulares.\n", numCreadores, numUsuarios);
+					for(int j = 0; j < numTotal; j++) {
+						printf("%s\n", (*usuariosComunidad[j]).nombre);
+					}
+									
+					free(usuariosComunidad);
+					free(cola);		
+				}
+			}
+			
 			
 			//Liberamos la memoria dinamica de la matriz de aristas.
 			for(int i = 0; i < subred.numUsuarios; i++) {
